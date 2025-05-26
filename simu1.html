@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simulado Gerado</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="img/icon.png" />
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="img/icon.png" alt="Ícone de livro" class="logo-icon" />
+      Prepara Enade
+    </div>
+    <nav>
+      <div class="hamburger" onclick="toggleMenu()">☰</div>
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="simulados.html">Simulados</a></li>
+        <li><a href="ranking.html">Ranking</a></li>
+        <li><a href="questoes.html">Questões</a></li>
+      </ul>
+    </nav>
+    <div id="login-area">
+      <button class="btn-login" onclick="window.location.href='login.html'">Login</button>
+    </div>
+  </header>
+
+  <section class="container">
+    <div class="topo-questoes">
+      <h2>Simulado Gerado</h2>
+    </div>
+
+    <div class="questoes-lista" id="simulado-container">
+      <!-- Questões aparecerão aqui -->
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Plataforma Enade - Todos os direitos reservados</p>
+  </footer>
+
+  <script>
+    let questoesCarregadas = [];
+    function exibirQuestoes() {
+      const container = document.getElementById("simulado-container");
+      const questoes = JSON.parse(localStorage.getItem("simuladoPersonalizado")) || [];
+      questoesCarregadas = questoes;
+
+      if (questoes.length === 0) {
+        container.innerHTML = "<p>Nenhuma questão encontrada para este simulado.</p>";
+        return;
+      }
+
+      const letras = ["A", "B", "C", "D", "E"];
+      questoes.forEach((q, index) => {
+        const questao = document.createElement("div");
+        questao.className = "questao";
+        const nomeGrupo = `questao_${index}`;
+        const alternativasEmbaralhadas = q.alternativas.map((alt, idx) => ({ ...alt, originalIndex: idx }));
+        alternativasEmbaralhadas.sort(() => Math.random() - 0.5);
+
+        // Armazena a ordem embaralhada no objeto da questão
+        q.alternativasExibidas = alternativasEmbaralhadas;
+
+        questao.innerHTML = `
+          <div class="cabecalho-questao">
+            <span class="tag-info"><strong>Questão:</strong> ${index + 1}</span>
+            <span class="tag-info"><strong>Banca:</strong> ${q.banca?.toUpperCase() || 'BANCA'}</span>
+            <span class="tag-info"><strong>Ano:</strong> ${q.ano || 'Ano'}</span>
+            <span class="tag-info"><strong>Categoria:</strong> ${q.categoria ? q.categoria.charAt(0).toUpperCase() + q.categoria.slice(1) : 'Categoria'}</span>
+          </div>
+          <h>${q.enunciado}</h>
+          <div class="alternativas" id="alternativas_${index}">
+            ${alternativasEmbaralhadas.map((alt, i) => `
+  <label class="alternativa-item">
+    <input type="radio" name="${nomeGrupo}" value="${i}" />
+    <span class="circulo">${letras[i]}</span>
+    <span class="texto-alt">${alt.texto}</span>
+  </label>
+`).join('')}
+
+          </div>
+          <button class="btn-responder" onclick="verificarResposta('${nomeGrupo}', ${q.id})">Responder</button>
+  <span class="feedback" id="feedback_${q.id}"></span>
+  <div class="comentario" id="comentario_${q.id}" style="margin-top:8px; display:none;"></div>
+        `;
+        container.appendChild(questao);
+      });
+    }
+
+    function toggleMenu() {
+      const navList = document.querySelector("nav ul");
+      navList.classList.toggle("show");
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      exibirQuestoes();
+    });
+    function verificarResposta(nomeGrupo, questaoId) {
+  const selecionado = document.querySelector(`input[name="${nomeGrupo}"]:checked`);
+  const feedback = document.getElementById(`feedback_${questaoId}`);
+  const comentarioDiv = document.getElementById(`comentario_${questaoId}`);
+
+  if (!selecionado) {
+    feedback.textContent = "Selecione uma alternativa.";
+    feedback.style.color = "orange";
+    comentarioDiv.innerHTML = "";
+    return;
+  }
+
+  const indice = parseInt(selecionado.value);
+  const questao = questoesCarregadas.find(q => q.id === questaoId);
+  const alternativaSelecionada = questao.alternativasExibidas[indice];
+
+  // Limpa classes anteriores
+  const radios = document.querySelectorAll(`input[name="${nomeGrupo}"]`);
+  radios.forEach(input => {
+    const label = input.closest(".alternativa-item");
+    label.classList.remove("selecionada", "correta", "errada");
+  });
+
+  const labelSelecionado = selecionado.closest(".alternativa-item");
+
+  if (alternativaSelecionada && alternativaSelecionada.correta) {
+    feedback.textContent = "✅ Correta!";
+    feedback.style.color = "green";
+    labelSelecionado.classList.add("correta");
+
+    comentarioDiv.innerHTML = questao.comentario || "Comentário não disponível para esta questão.";
+    comentarioDiv.style.display = "block";
+  } else {
+    feedback.textContent = "❌ Incorreta.";
+    feedback.style.color = "red";
+    labelSelecionado.classList.add("errada");
+    comentarioDiv.innerHTML = "";
+  comentarioDiv.style.display = "none";
+
+    comentarioDiv.innerHTML = "";
+  }
+  selecionado.checked = false;
+}
+const user = JSON.parse(localStorage.getItem('user'));
+    const loginArea = document.getElementById('login-area');
+
+if (user && loginArea) {
+    const displayName = user.nickname ? user.nickname : user.name;
+    const profilePhoto = user.foto ? user.foto : 'img/Animais/do-utilizador.png';
+
+    loginArea.innerHTML = `
+        <div class="user-info" onclick="window.location.href='perfil.html'" style="cursor: pointer;">
+            <img src="${profilePhoto}" alt="Foto de Perfil" class="profile-photo">
+            <span class="user-name">${displayName}</span>
+            <button onclick="logout(event)" class="btn-login">Sair</button>
+        </div>
+        
+    `;
+}
+function logout(event) {
+        event.stopPropagation();
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+
+  </script>
+</body>
+</html>

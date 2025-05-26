@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prepara Enade</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/x-icon" href="img/icon.png" />
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="img/icon.png" alt="Ícone de livro" class="logo-icon" />
+            Prepara Enade
+        </div>
+        <nav>
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="simulados.html">Simulados</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="questoes.html">Questões</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="form-wrapper">
+            <h2>Crie sua conta</h2>
+            <form id="register-form" class="register-form">
+                <label for="nome">Nome Completo:</label>
+                <input type="text" id="nome" name="nome" required />
+
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" name="email" required />
+
+                <label for="senha">Senha:</label>
+                <div class="senha-wrapper">
+                    <input type="password" id="senha" name="senha" required />
+                    <span class="toggle-senha" onclick="toggleSenha('senha', this)">◠</span>
+                </div>
+
+                <label for="confirmar-senha">Confirmar Senha:</label>
+                <div class="senha-wrapper">
+                    <input type="password" id="confirmar-senha" name="confirmar-senha" required />
+                    <span class="toggle-senha" onclick="toggleSenha('confirmar-senha', this)">◠</span>
+                </div>
+
+                <p id="mensagem-erro" class="mensagem-erro" style="color: red; display: none;"></p>
+
+                <button type="submit" class="btn">Cadastrar</button>
+            </form>
+            <p>Já tem uma conta? <a href="login.html">Faça login</a></p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Plataforma Enade - Todos os direitos reservados</p>
+    </footer>
+
+    <script>
+        document.getElementById("register-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const nome = document.getElementById("nome").value;
+            const email = document.getElementById("email").value;
+            const senha = document.getElementById("senha").value;
+            const confirmarSenha = document.getElementById("confirmar-senha").value;
+
+            const mensagemErro = document.getElementById("mensagem-erro");
+            mensagemErro.style.display = "none";
+            mensagemErro.textContent = "";
+
+            if (senha !== confirmarSenha) {
+                mensagemErro.textContent = "As senhas não coincidem.";
+                mensagemErro.style.display = "block";
+                return;
+            }
+
+            try {
+                const resposta = await fetch("http://localhost:3000/api/auth/registro", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        name: nome,
+                        email: email,
+                        password: senha
+                        // Removido 'foto' e 'pais'
+                    })
+                });
+
+                const resultado = await resposta.json();
+                console.log(resultado);
+
+                if (resposta.ok) {
+                    // Salva o usuário no localStorage sem 'pais' e 'foto'
+                    localStorage.setItem("user", JSON.stringify(resultado.usuario));
+                    window.location.href = "login.html";
+                } else {
+                    mensagemErro.textContent = "Erro: " + (resultado.erro || resultado.message || "Não foi possível concluir o cadastro.");
+                    mensagemErro.style.display = "block";
+                }
+            } catch (erro) {
+                mensagemErro.textContent = "Erro ao conectar com o servidor.";
+                mensagemErro.style.display = "block";
+                console.error(erro);
+            }
+        });
+
+        function toggleSenha(idCampo, elementoIcone) {
+            const input = document.getElementById(idCampo);
+            if (input.type === "password") {
+                input.type = "text";
+                elementoIcone.textContent = "◉";
+            } else {
+                input.type = "password";
+                elementoIcone.textContent = "◠";
+            }
+        }
+    </script>
+</body>
+</html>

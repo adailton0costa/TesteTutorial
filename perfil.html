@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prepara Enade</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="img/icon.png">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="img/icon.png" alt="Ícone de livro" class="logo-icon">
+            Prepara Enade
+          </div>          
+        <nav>
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="simulados.html">Simulados</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="questoes.html">Questões</a></li>
+            </ul>
+        </nav>
+        <div id="login-area">
+            <button class="btn-login" onclick="window.location.href='login.html'">Login</button>
+        </div>
+    </header>
+
+<main>
+  <div class="form-wrapper">
+    <h2>Meu Perfil</h2>
+    <button id="editar-btn" class="btn-editar" type="button">Editar</button>
+
+<form id="perfil-form" novalidate>
+  <label>Foto de Perfil:</label>
+      <div id="fotos-container" class="fotos-container"></div>
+  <label for="nome">Nome Completo:</label>
+  <input type="text" id="nome" name="nome" required disabled />
+
+      <label for="apelido">Apelido:</label>
+      <input type="text" id="apelido" name="apelido" />
+
+      <label for="email">E-mail:</label>
+      <input type="email" id="email" name="email" readonly />
+
+
+      <label for="pais">País</label>
+      <div id="custom-select-container" class="custom-select" tabindex="0" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="pais-label">
+        <div class="pais-selecionado" id="pais-selecionado" aria-live="polite"></div>
+        <ul id="lista-paises" class="lista-paises" role="listbox" tabindex="-1" aria-label="Lista de países"></ul>
+      </div>
+      <input type="hidden" id="pais" name="pais" value="ad" />
+
+      <label for="senha">Nova Senha:</label>
+      <input
+        type="password"
+        id="senha"
+        name="senha"
+        placeholder="Deixe em branco para manter"
+        autocomplete="new-password"
+      />
+
+      <label for="confirmar-senha">Confirmar Nova Senha:</label>
+      <input
+        type="password"
+        id="confirmar-senha"
+        name="confirmar-senha"
+        placeholder="Deixe em branco para manter"
+        autocomplete="new-password"
+      />
+
+      <button type="submit" class="btn" id="salvar-btn" style="display: none;">Salvar Alterações</button>
+
+      
+    </form>
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 Plataforma Enade - Todos os direitos reservados</p>
+</footer>
+
+<script>
+  // Dados do usuário simulado (substituir com dados reais)
+  const user = JSON.parse(localStorage.getItem("user")) || {
+    name: "Usuário Exemplo",
+    nickname: "UserEx",
+    email: "user@example.com",
+    country: "br",
+    photoId: 1
+  };
+
+  if (!user) {
+    alert("Você precisa estar logado para acessar o perfil.");
+    window.location.href = "login.html";
+  }
+
+  const paises = [
+  { code: "ad", nome: "Andorra", img: "img/bandeiras/ad.png" },
+  { code: "br", nome: "Brazil", img: "img/bandeiras/br.png" },
+  { code: "zw", nome: "Zimbabwe", img: "img/bandeiras/zw.png" }
+];
+  // Fotos de perfil simuladas (id e src)
+  const fotosPerfil = [
+  { id: 1, src: "img/Animais/do-utilizador.png" },
+  { id: 2, src: "img/Animais/aranha.png" },
+
+];
+
+// Código que carrega as fotos no container (seu código adaptado)
+function carregarFotosPerfil() {
+  fotosContainer.innerHTML = "";
+  fotosPerfil.forEach(foto => {
+    const img = document.createElement("img");
+    img.src = foto.src;
+    img.alt = `Foto de perfil ${foto.id}`;
+    img.classList.add("foto-opcao");
+    if (foto.id === fotoSelecionadaId) {
+      img.classList.add("selecionada");
+    }
+    img.setAttribute("data-id", foto.id);
+    img.tabIndex = 0;
+
+    // Seleção via click
+    img.addEventListener("click", () => {
+      fotoSelecionadaId = foto.id;
+      atualizarSelecaoFoto();
+    });
+    // Seleção via teclado (Enter / Space)
+    img.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fotoSelecionadaId = foto.id;
+        atualizarSelecaoFoto();
+      }
+    });
+
+    fotosContainer.appendChild(img);
+  });
+  let fotoSelecionadaId = user.photoId || "do-utilizador";
+}
+  // Referências aos elementos
+  const nomeInput = document.getElementById("nome");
+  const apelidoInput = document.getElementById("apelido");
+  const emailInput = document.getElementById("email");
+  const fotosContainer = document.getElementById("fotos-container");
+  const paisSelecionado = document.getElementById("pais-selecionado");
+  const listaPaises = document.getElementById("lista-paises");
+  const paisHiddenInput = document.getElementById("pais");
+  const senhaInput = document.getElementById("senha");
+  const confirmarSenhaInput = document.getElementById("confirmar-senha");
+  const form = document.getElementById("perfil-form");
+  const customSelect = document.getElementById("custom-select-container");
+
+  // Variável para armazenar o país selecionado atualmente
+let paisAtual = user.country || "br";
+let fotoSelecionadaId = user.photoId || fotosPerfil[0].id;
+
+// Função para atualizar a exibição do país selecionado
+function atualizarPaisSelecionado(code) {
+  const pais = paises.find(p => p.code === code);
+  if (pais) {
+    paisSelecionado.innerHTML = `
+      <img src="${pais.img}" alt="Bandeira ${pais.nome}" />
+      <span>${pais.nome}</span>
+    `;
+    paisHiddenInput.value = pais.code;
+    paisAtual = pais.code;
+  }
+}
+
+// Função para popular a lista de países no dropdown
+function popularListaPaises() {
+  listaPaises.innerHTML = "";
+  paises.forEach(pais => {
+    const li = document.createElement("li");
+    li.setAttribute("role", "option");
+    li.setAttribute("tabindex", "-1");
+    li.dataset.code = pais.code;
+    li.innerHTML = `
+      <img src="${pais.img}" alt="Bandeira ${pais.nome}" />
+      <span>${pais.nome}</span>
+    `;
+    if (pais.code === paisAtual) {
+      li.classList.add("selected");
+      li.setAttribute("aria-selected", "true");
+    }
+    listaPaises.appendChild(li);
+  });
+}
+
+// Abrir/fechar dropdown
+function toggleDropdown() {
+  const isExpanded = customSelect.getAttribute("aria-expanded") === "true";
+  if (isExpanded) {
+    fecharDropdown();
+  } else {
+    abrirDropdown();
+  }
+}
+
+function abrirDropdown() {
+  listaPaises.classList.add("visible");
+  customSelect.setAttribute("aria-expanded", "true");
+  // Focar o item selecionado
+  const selecionado = listaPaises.querySelector(".selected");
+  if (selecionado) {
+    selecionado.focus();
+  } else {
+    listaPaises.firstChild.focus();
+  }
+}
+
+function fecharDropdown() {
+  listaPaises.classList.remove("visible");
+  customSelect.setAttribute("aria-expanded", "false");
+  paisSelecionado.focus();
+}
+
+// Atualiza a seleção ao clicar na lista
+listaPaises.addEventListener("click", (e) => {
+  const li = e.target.closest("li");
+  if (!li) return;
+  const novoCodigo = li.dataset.code;
+  atualizarPaisSelecionado(novoCodigo);
+
+  // Remove seleção anterior
+  listaPaises.querySelectorAll("li").forEach(item => {
+    item.classList.remove("selected");
+    item.removeAttribute("aria-selected");
+  });
+
+  // Marca novo selecionado
+  li.classList.add("selected");
+  li.setAttribute("aria-selected", "true");
+
+  fecharDropdown();
+});
+
+// Navegação com teclado no dropdown
+listaPaises.addEventListener("keydown", (e) => {
+  const items = Array.from(listaPaises.querySelectorAll("li"));
+  const indexAtual = items.findIndex(i => i === document.activeElement);
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    const proximo = (indexAtual + 1) % items.length;
+    items[proximo].focus();
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    const anterior = (indexAtual - 1 + items.length) % items.length;
+    items[anterior].focus();
+  } else if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    document.activeElement.click();
+  } else if (e.key === "Escape") {
+    fecharDropdown();
+  }
+});
+
+// Abrir dropdown ao clicar no paisSelecionado
+paisSelecionado.addEventListener("click", () => {
+  toggleDropdown();
+});
+
+// Fechar dropdown ao clicar fora
+document.addEventListener("click", (e) => {
+  if (!customSelect.contains(e.target)) {
+    fecharDropdown();
+  }
+});
+
+// Preencher inputs iniciais
+nomeInput.value = user.name || "";
+apelidoInput.value = user.nickname || "";
+emailInput.value = user.email || "";
+atualizarPaisSelecionado(paisAtual);
+
+// Popular lista de países
+popularListaPaises();
+
+// Popular fotos de perfil e selecionar a atual
+function carregarFotosPerfil() {
+  fotosContainer.innerHTML = "";
+  fotosPerfil.forEach(foto => {
+    const img = document.createElement("img");
+    img.src = foto.src;
+    img.alt = `Foto de perfil ${foto.id}`;
+    img.classList.add("foto-opcao");
+    if (foto.id === fotoSelecionadaId) {
+      img.classList.add("selecionada");
+    }
+    img.setAttribute("data-id", foto.id);
+    img.tabIndex = 0;
+
+    // Seleção via click
+    img.addEventListener("click", () => {
+      fotoSelecionadaId = foto.id;
+      atualizarSelecaoFoto();
+    });
+    // Seleção via teclado (Enter / Space)
+    img.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fotoSelecionadaId = foto.id;
+        atualizarSelecaoFoto();
+      }
+    });
+
+    fotosContainer.appendChild(img);
+  });
+}
+
+function atualizarSelecaoFoto() {
+  fotosContainer.querySelectorAll(".foto-opcao").forEach(img => {
+    img.classList.toggle("selecionada", img.dataset.id == fotoSelecionadaId);
+  });
+}
+
+carregarFotosPerfil();
+
+// Validação de senha
+function validarSenhas() {
+  const senha = senhaInput.value;
+  const confirma = confirmarSenhaInput.value;
+
+  // Se ambos vazios, não muda a senha
+  if (!senha && !confirma) {
+    return true;
+  }
+  if (senha !== confirma) {
+    alert("As senhas não coincidem.");
+    return false;
+  }
+  if (senha.length < 6) {
+    alert("A senha deve ter pelo menos 6 caracteres.");
+    return false;
+  }
+  return true;
+}
+
+// Envio do formulário
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  if (!form.checkValidity()) {
+    alert("Por favor, preencha os campos obrigatórios corretamente.");
+    return;
+  }
+
+  if (!validarSenhas()) {
+    return;
+  }
+
+  // Atualizar dados no objeto user
+  user.name = nomeInput.value.trim();
+  user.nickname = apelidoInput.value.trim();
+  user.country = paisAtual;
+  user.photoId = fotoSelecionadaId;
+
+  if (senhaInput.value) {
+    user.password = senhaInput.value;
+  }
+
+  console.log("ID do usuário:", user.id);
+
+  // Agora sim, fazer o fetch aqui dentro
+  fetch('/api/auth/update-profile', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: user.id,
+      name: user.name,
+      apelido: user.nickname,
+      password: senhaInput.value.trim() || undefined,
+      pais: paisAtual,
+      foto: fotoSelecionadaId
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.sucesso) {
+      alert('Perfil atualizado com sucesso!');
+    } else {
+      alert('Erro ao atualizar perfil: ' + (data.erro || data.message));
+    }
+  })
+  .catch(error => {
+    console.error('Erro ao fazer fetch:', error);
+    alert('Erro ao conectar com o servidor.');
+  });
+});
+
+
+// Código de edição: habilitar/desabilitar os campos com um botão "Editar" à direita da tela.
+const editarBtn = document.getElementById("editar-btn");
+let emEdicao = false;
+
+function setCamposEditaveis(ativo) {
+  nomeInput.disabled = !ativo;
+  apelidoInput.disabled = !ativo;
+  senhaInput.disabled = !ativo;
+  confirmarSenhaInput.disabled = !ativo;
+  // Define o tabindex para que os elementos do dropdown fiquem navegáveis apenas se estiverem editáveis
+  customSelect.setAttribute("tabindex", ativo ? "0" : "-1");
+  listaPaises.querySelectorAll("li").forEach(item => {
+    item.tabIndex = ativo ? "0" : "-1";
+  });
+  fotosContainer.querySelectorAll(".foto-opcao").forEach(img => {
+    img.tabIndex = ativo ? "0" : "-1";
+  });
+  // Exibe ou oculta o botão de salvar (o botão de submit no formulário)
+  form.querySelector("button[type='submit']").style.display = ativo ? "block" : "none";
+}
+
+editarBtn.addEventListener("click", () => {
+  emEdicao = !emEdicao;
+  setCamposEditaveis(emEdicao);
+  editarBtn.textContent = emEdicao ? "Salvar" : "Editar";
+
+  // Se for salvar, envia o formulário programaticamente
+  if (!emEdicao) {
+    form.requestSubmit();
+  }
+});
+
+// Inicialmente, os campos ficam desativados
+window.addEventListener("DOMContentLoaded", () => {
+  setCamposEditaveis(false);
+});
+
+const loginArea = document.getElementById('login-area');
+
+if (user && loginArea) {
+    const displayName = user.nickname ? user.nickname : user.name;
+    const profilePhoto = user.foto ? user.foto : 'img/Animais/do-utilizador.png';
+
+    loginArea.innerHTML = `
+        <div class="user-info" onclick="window.location.href='perfil.html'" style="cursor: pointer;">
+            <img src="${profilePhoto}" alt="Foto de Perfil" class="profile-photo">
+            <span class="user-name">${displayName}</span>
+            <button onclick="logout(event)" class="btn-login">Sair</button>
+        </div>
+        
+    `;
+}
+function logout(event) {
+        event.stopPropagation();
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+
+
+</script>
+
+</body>
+</html>

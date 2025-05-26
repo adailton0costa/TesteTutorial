@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prepara Enade</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="img/icon.png" />
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="img/icon.png" alt="Ícone de livro" class="logo-icon" />
+      Prepara Enade
+    </div>
+    <nav>
+      <div class="hamburger" onclick="toggleMenu()">☰</div>
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="simulados.html">Simulados</a></li>
+        <li><a href="ranking.html">Ranking</a></li>
+        <li><a href="questoes.html">Questões</a></li>
+      </ul>
+    </nav>
+    <div id="login-area">
+      <button class="btn-login" onclick="window.location.href='login.html'">Login</button>
+    </div>
+  </header>
+
+  <section class="container">
+  <div class="topo-questoes">
+    <h2>Questões</h2>
+    <button id="btn-filtro">Filtrar</button>
+  </div>
+
+  <div class="filtro-questoes" id="filtro" style="display: none;">
+    <div class="campo-filtro">
+      <select id="categoria"></select>
+    </div>
+
+    <div class="campo-filtro">
+      <select id="banca"></select>
+    </div>
+
+    <div class="campo-filtro">
+      <select id="ano"></select>
+    </div>
+  </div>
+
+    <div class="questoes-lista" id="questoes-lista"></div>
+    
+
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Plataforma Enade - Todos os direitos reservados</p>
+  </footer>
+  <script>
+    const listaQuestoes = document.getElementById("questoes-lista");
+    const categoriaSelect = document.getElementById("categoria");
+    const bancaSelect = document.getElementById("banca");
+    const anoSelect = document.getElementById("ano");
+
+    let questoesCarregadas = [];
+
+    async function carregarQuestoes() {
+      try {
+        const res = await fetch("http://localhost:3000/api/questoes");
+        const dados = await res.json();
+        questoesCarregadas = dados;
+
+        preencherFiltros(dados);
+        renderizarQuestoes(); // Renderiza todas
+      } catch (err) {
+        console.error("Erro ao carregar questões:", err);
+        listaQuestoes.innerHTML = "<p>Erro ao carregar questões.</p>";
+      }
+    }
+
+    function preencherFiltros(questoes) {
+      const categorias = new Set();
+      const bancas = new Set();
+      const anos = new Set();
+
+      questoes.forEach(q => {
+        if (q.categoria) categorias.add(q.categoria);
+        if (q.banca) bancas.add(q.banca);
+        if (q.ano) anos.add(q.ano);
+      });
+
+      // Helper para preencher select
+      function preencherSelect(select, valores, label) {
+        select.innerHTML = `<option value="">${label}</option>`;
+        Array.from(valores).sort().forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          opt.textContent = v;
+          select.appendChild(opt);
+        });
+      }
+
+      preencherSelect(categoriaSelect, categorias, "Categoria");
+      preencherSelect(bancaSelect, bancas, "Banca");
+      preencherSelect(anoSelect, anos, "Ano");
+    }
+
+    function renderizarQuestoes() {
+      listaQuestoes.innerHTML = "<p>Carregando...</p>";
+
+      const filtroCategoria = categoriaSelect.value;
+      const filtroBanca = bancaSelect.value;
+      const filtroAno = anoSelect.value;
+
+      const filtradas = questoesCarregadas.filter(q => {
+        return (
+          (filtroCategoria === "" || q.categoria === filtroCategoria) &&
+          (filtroBanca === "" || q.banca === filtroBanca) &&
+          (filtroAno === "" || String(q.ano) === filtroAno)
+        );
+      });
+
+      listaQuestoes.innerHTML = "";
+
+      if (filtradas.length === 0) {
+        listaQuestoes.innerHTML = "<p>Nenhuma questão encontrada.</p>";
+        return;
+      }
+
+      filtradas.forEach(q => {
+        const questao = document.createElement("div");
+        questao.className = "questao";
+                const letras = ["A", "B", "C", "D", "E"];
+        const nomeGrupo = `questao_${q.id}`;
+
+        // Embaralha as alternativas mantendo referência à posição original
+        const alternativasEmbaralhadas = q.alternativas.map((alt, idx) => ({ ...alt, originalIndex: idx }));
+        alternativasEmbaralhadas.sort(() => Math.random() - 0.5);
+
+        // Armazena a ordem embaralhada no objeto da questão
+        q.alternativasExibidas = alternativasEmbaralhadas;
+        questao.innerHTML = `
+  <div class="cabecalho-questao">
+  <span class="tag-info"><strong>Questão:</strong> ${q.numero || q.id}</span>
+  <span class="tag-info"><strong>Banca:</strong> ${q.banca?.toUpperCase() || 'BANCA'}</span>
+  <span class="tag-info"><strong>Ano:</strong> ${q.ano || 'Ano'}</span>
+  <span class="tag-info"><strong>Categoria:</strong> ${q.categoria ? q.categoria.charAt(0).toUpperCase() + q.categoria.slice(1) : 'Categoria'}</span>
+</div>
+    
+  </div>
+<h>${q.enunciado}</h>
+  <div class="alternativas" id="alternativas_${q.id}">
+    ${alternativasEmbaralhadas.map((a, i) => `
+      <label class="alternativa-item">
+        <input type="radio" name="${nomeGrupo}" value="${i}" />
+        <span class="circulo">${letras[i]}</span>
+        <span class="texto-alt">${a.texto}</span>
+      </label>
+    `).join('')}
+  </div>
+
+  <button class="btn-responder" onclick="verificarResposta('${nomeGrupo}', ${q.id})">Responder</button>
+  <span class="feedback" id="feedback_${q.id}"></span>
+
+  <div class="comentario" id="comentario_${q.id}" style="margin-top:8px; display:none;"></div>
+`;
+
+        listaQuestoes.appendChild(questao);
+      });
+    }
+
+    [categoriaSelect, bancaSelect, anoSelect].forEach(select => {
+      select.addEventListener("change", renderizarQuestoes);
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      carregarQuestoes();})
+
+    function toggleMenu() {
+      const navList = document.querySelector("nav ul");
+      navList.classList.toggle("show");
+    }
+    const btnFiltro = document.getElementById('btn-filtro');
+  const filtro = document.getElementById('filtro');
+
+  btnFiltro.addEventListener('click', () => {
+    filtro.style.display = filtro.style.display === 'none' ? 'flex' : 'none';
+  });
+  
+    function verificarResposta(nomeGrupo, questaoId) {
+  const selecionado = document.querySelector(`input[name="${nomeGrupo}"]:checked`);
+  const feedback = document.getElementById(`feedback_${questaoId}`);
+  const comentarioDiv = document.getElementById(`comentario_${questaoId}`);
+
+  if (!selecionado) {
+    feedback.textContent = "Selecione uma alternativa.";
+    feedback.style.color = "orange";
+    comentarioDiv.innerHTML = "";
+    return;
+  }
+
+  const indice = parseInt(selecionado.value);
+  const questao = questoesCarregadas.find(q => q.id === questaoId);
+  const alternativaSelecionada = questao.alternativasExibidas[indice];
+
+  // Limpa classes anteriores
+  const radios = document.querySelectorAll(`input[name="${nomeGrupo}"]`);
+  radios.forEach(input => {
+    const label = input.closest(".alternativa-item");
+    label.classList.remove("selecionada", "correta", "errada");
+  });
+
+  const labelSelecionado = selecionado.closest(".alternativa-item");
+
+  if (alternativaSelecionada && alternativaSelecionada.correta) {
+    feedback.textContent = "✅ Correta!";
+    feedback.style.color = "green";
+    labelSelecionado.classList.add("correta");
+
+    comentarioDiv.innerHTML = questao.comentario || "Comentário não disponível para esta questão.";
+    comentarioDiv.style.display = "block";
+  } else {
+    feedback.textContent = "❌ Incorreta.";
+    feedback.style.color = "red";
+    labelSelecionado.classList.add("errada");
+    comentarioDiv.innerHTML = "";          // LIMPAR
+  comentarioDiv.style.display = "none";
+
+    comentarioDiv.innerHTML = ""; // Limpa comentário em resposta errada
+  }
+
+  // Opcional: desmarca o rádio para permitir nova seleção
+  selecionado.checked = false;
+}
+const user = JSON.parse(localStorage.getItem('user'));
+      const loginArea = document.getElementById('login-area');
+
+if (user && loginArea) {
+    const displayName = user.nickname ? user.nickname : user.name;
+    const profilePhoto = user.foto ? user.foto : 'img/Animais/do-utilizador.png';
+
+    loginArea.innerHTML = `
+        <div class="user-info" onclick="window.location.href='perfil.html'" style="cursor: pointer;">
+            <img src="${profilePhoto}" alt="Foto de Perfil" class="profile-photo">
+            <span class="user-name">${displayName}</span>
+            <button onclick="logout(event)" class="btn-login">Sair</button>
+        </div>
+        
+    `;
+}
+function logout(event) {
+        event.stopPropagation();
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

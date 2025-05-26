@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prepara Enade</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="img/icon.png">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="img/icon.png" alt="Ícone de livro" class="logo-icon">
+            Prepara Enade
+          </div>          
+        <nav>
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="simulados.html">Simulados</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="questoes.html">Questões</a></li>
+            </ul>
+        </nav>
+        <div id="login-area">
+            <button class="btn-login" onclick="window.location.href='login.html'">Login</button>
+        </div>
+    </header>
+    
+    <section class="carousel">
+            <div class="slides">
+                <img src="img/1.png" alt="Imagem 1">
+                <img src="img/2.png" alt="Imagem 2">
+                <img src="img/3.png" alt="Imagem 3">
+            </div>
+            <div class="dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+    </section>
+     <section class="posters">
+  <div class="poster" onclick="window.location.href='oque-e-enade.html'">
+    <img src="img/O que é o ENADE_.png" alt="O que é o ENADE">
+  </div>
+  <div class="poster" onclick="window.location.href='questoes-acessibilidade.html'">
+    <img src="img/10 Questões de Acessibilidade.png" alt="10 Questões de Acessibilidade">
+  </div>
+</section>
+    <div id="custom-alert" class="custom-alert">
+    <div class="alert-box">
+        <p>Você precisa estar logado para acessar essa área.</p>
+        <button onclick="closeAlert()">OK</button>
+    </div>
+</div>    
+
+    <footer>
+        <p>&copy; 2025 Plataforma Enade - Todos os direitos reservados</p>
+    </footer>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let links = document.querySelectorAll("nav ul li a");
+        let currentPage = window.location.pathname.split("/").pop();
+        links.forEach(link => {
+            if (link.getAttribute("href") === currentPage) {
+                link.classList.add("active");
+            }
+        });
+
+        let currentSlide = 0;
+        const slides = document.querySelector(".slides");
+        const dots = document.querySelectorAll(".dot");
+
+        function showSlide(index) {
+            slides.style.transform = `translateX(-${index * 100}%)`;
+            dots.forEach(dot => dot.classList.remove("active"));
+            dots[index].classList.add("active");
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % 3;
+            showSlide(currentSlide);
+        }
+
+        setInterval(nextSlide, 4000);
+
+        dots.forEach((dot, index) => {
+            dot.addEventListener("click", () => {
+                currentSlide = index;
+                showSlide(currentSlide);
+            });
+        });
+
+        const user = JSON.parse(localStorage.getItem('user'));
+const loginArea = document.getElementById('login-area');
+
+if (user && loginArea) {
+    const displayName = user.nickname ? user.nickname : user.name;
+    const profilePhoto = user.foto ? user.foto : 'img/Animais/do-utilizador.png';
+
+    loginArea.innerHTML = `
+        <div class="user-info" onclick="window.location.href='perfil.html'" style="cursor: pointer;">
+            <img src="${profilePhoto}" alt="Foto de Perfil" class="profile-photo">
+            <span class="user-name">${displayName}</span>
+            <button onclick="logout(event)" class="btn-login">Sair</button>
+        </div>
+        
+    `;
+}
+
+        // ✅ Aqui dentro o user está definido corretamente
+        document.querySelectorAll("nav ul li a").forEach(link => {
+            const href = link.getAttribute("href");
+            if ((href === "ranking.html" || href === "questoes.html") && !user) {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    showAlert();
+                });
+            }
+        });
+    });
+function showAlert() {
+    const alert = document.getElementById("custom-alert");
+    if (alert) {
+        alert.style.display = "flex";
+    }
+}
+
+function closeAlert() {
+    window.location.href = "login.html";
+}
+function logout(event) {
+        event.stopPropagation();
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+
+</script>
+</body>
+</html>

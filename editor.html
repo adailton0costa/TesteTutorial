@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Editar Questões</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 10px;
+    }
+    .questao {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    .btn {
+      margin-top: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .btn-salvar {
+      background-color: #3498db;
+      color: white;
+      border: none;
+    }
+    .btn-excluir {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      margin-left: 10px;
+    }
+    .alt-item {
+      margin-bottom: 5px;
+    }
+    .hamburger {
+      display: none;
+      font-size: 2rem;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      nav ul {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 60px;
+        right: 0;
+        background: #3f4f85;
+        width: 200px;
+        padding: 15px;
+        border-radius: 10px;
+      }
+
+      nav ul.show {
+        display: flex;
+      }
+
+      .hamburger {
+        display: block;
+      }
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 30px;
+    }
+
+    nav ul li {
+      position: relative;
+    }
+
+    nav ul li a {
+      color: rgb(0, 0, 0);
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+
+    nav ul li a:hover {
+      color: #FFD54F;
+      transform: scale(1.1);
+    }
+
+    nav ul li a::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      background-color: #FFD54F;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: width 0.3s ease;
+    }
+
+    nav ul li a:hover::after,
+    nav ul li a.active::after {
+      width: 100%;
+    }
+
+    nav ul li a.active {
+      color: #FFD54F;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <nav>
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="simulados.html">Simulados</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="questoes.html">Questões</a></li>
+                <li><a href="cadquest.html">ADD Quest</a></li>
+                <li><a href="editor.html">EDIT Quest</a></li>
+            </ul>
+  </nav>
+  <h1>Editar e Excluir Questões</h1>
+  <div id="containerQuestoes"></div>
+
+  <script>
+    async function carregarQuestoes() {
+      try {
+        const res = await fetch('http://localhost:3000/api/questoes');
+        const questoes = await res.json();
+        const container = document.getElementById('containerQuestoes');
+        container.innerHTML = '';
+
+        questoes.forEach(q => {
+          const div = document.createElement('div');
+          div.className = 'questao';
+
+          div.innerHTML = `
+            <label>Enunciado:</label>
+            <textarea id="enunciado-${q.id}" rows="4">${q.enunciado}</textarea>
+
+            <label>Categoria:</label>
+            <input type="text" id="categoria-${q.id}" value="${q.categoria || ''}">
+
+            <label>Banca:</label>
+            <input type="text" id="banca-${q.id}" value="${q.banca || ''}">
+
+            <label>Ano:</label>
+            <input type="number" id="ano-${q.id}" value="${q.ano || ''}">
+
+            <label>Comentário da Resposta Correta:</label>
+            <textarea id="comentario-${q.id}" rows="3">${q.comentario || ''}</textarea>
+
+            <label>Alternativas:</label>
+            ${q.alternativas.map((alt, i) => `
+              <div class="alt-item">
+                <input type="text" value="${alt.texto}" id="alt-texto-${q.id}-${i}" style="width:70%">
+                <label>
+                  <input type="checkbox" ${alt.correta ? 'checked' : ''} id="alt-correta-${q.id}-${i}">
+                  Correta
+                </label>
+              </div>
+            `).join('')}
+
+            <button class="btn btn-salvar" onclick="salvarQuestao(${q.id}, ${q.alternativas.length})">Salvar</button>
+            <button class="btn btn-excluir" onclick="excluirQuestao(${q.id})">Excluir</button>
+          `;
+
+          container.appendChild(div);
+        });
+      } catch (err) {
+        alert('Erro ao carregar questões.');
+        console.error(err);
+      }
+    }
+
+    async function salvarQuestao(id, totalAlternativas) {
+      const enunciado = document.getElementById(`enunciado-${id}`).value.trim();
+      const categoria = document.getElementById(`categoria-${id}`).value.trim();
+      const banca = document.getElementById(`banca-${id}`).value.trim();
+      const anoRaw = document.getElementById(`ano-${id}`).value.trim();
+      const comentario = document.getElementById(`comentario-${id}`).value.trim();
+      const ano = anoRaw ? parseInt(anoRaw) : null;
+
+      const alternativas = [];
+
+      for (let i = 0; i < totalAlternativas; i++) {
+        const texto = document.getElementById(`alt-texto-${id}-${i}`).value.trim();
+        const correta = document.getElementById(`alt-correta-${id}-${i}`).checked;
+        alternativas.push({ texto, correta });
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/questoes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            enunciado, categoria, banca, ano, comentario, alternativas
+          })
+        });
+
+        const data = await res.json();
+        alert(data.message || 'Questão atualizada!');
+      } catch (err) {
+        alert('Erro ao atualizar a questão.');
+      }
+    }
+
+    async function excluirQuestao(id) {
+      const confirmar = confirm("Tem certeza que deseja excluir esta questão?");
+      if (!confirmar) return;
+
+      try {
+        const res = await fetch('http://localhost:3000/api/questoes', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: [id] })
+        });
+
+        const data = await res.json();
+        alert(data.message || 'Questão excluída!');
+        carregarQuestoes();
+      } catch (err) {
+        alert('Erro ao excluir questão.');
+      }
+    }
+
+    carregarQuestoes();
+  </script>
+</body>
+</html>

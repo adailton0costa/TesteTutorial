@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prepara Enade</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/x-icon" href="img/icon.png" />
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="img/icon.png" alt="Ícone de livro" class="logo-icon" />
+            Prepara Enade
+        </div>
+        <nav>
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="simulados.html">Simulados</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="questoes.html">Questões</a></li>
+            </ul>
+        </nav>
+        <div id="login-area">
+            <button class="btn-login" onclick="window.location.href='login.html'">Login</button>
+        </div>
+    </header>
+
+    <section class="container">
+        <h2>Ranking de Pontuação</h2>
+        <p>Acompanhe sua posição e veja quem são os melhores no estudo para o Enade.</p>
+
+        <div class="ranking-tabela">
+            <h3>Ranking Geral</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Nome</th>
+                        <th>Pontos</th>
+                    </tr>
+                </thead>
+                <tbody id="ranking-geral-body">
+                    <!-- Conteúdo será inserido via JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ranking-tabela">
+            <h3>Ranking da Sala</h3>
+            <button onclick="criarSala()">Criar nova sala</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Nome</th>
+                        <th>Pontos</th>
+                    </tr>
+                </thead>
+                <tbody id="ranking-sala-body">
+                    <tr><td colspan="3">Carregando salas...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Plataforma Enade - Todos os direitos reservados</p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let links = document.querySelectorAll("nav ul li a");
+            let currentPage = window.location.pathname.split("/").pop();
+
+            links.forEach((link) => {
+                if (link.getAttribute("href") === currentPage) {
+                    link.classList.add("active");
+                }
+            });
+
+            const user = JSON.parse(localStorage.getItem("user"));
+            const loginArea = document.getElementById('login-area');
+
+if (user && loginArea) {
+    const displayName = user.nickname ? user.nickname : user.name;
+    const profilePhoto = user.foto ? user.foto : 'img/Animais/do-utilizador.png';
+
+    loginArea.innerHTML = `
+        <div class="user-info" onclick="window.location.href='perfil.html'" style="cursor: pointer;">
+            <img src="${profilePhoto}" alt="Foto de Perfil" class="profile-photo">
+            <span class="user-name">${displayName}</span>
+            <button onclick="logout(event)" class="btn-login">Sair</button>
+        </div>
+        
+    `;
+}
+
+            carregarRankingGeral();
+            carregarSalasDoUsuario();
+        });
+function logout(event) {
+        event.stopPropagation();
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+
+        async function carregarRankingGeral() {
+            try {
+                const response = await fetch("http://localhost:3000/api/usuarios/ranking");
+                const ranking = await response.json();
+
+                const tbody = document.getElementById("ranking-geral-body");
+                tbody.innerHTML = "";
+
+                ranking.forEach((usuario, index) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${usuario.name}</td>
+                        <td>${usuario.total_pontos ?? 0}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar ranking geral:", error);
+            }
+        }
+
+        async function criarSala() {
+            const nome = prompt("Nome da sala:");
+            if (!nome) return;
+
+            try {
+                const user = JSON.parse(localStorage.getItem("user"));
+                if (!user) {
+                    alert("Você precisa estar logado para criar uma sala.");
+                    return;
+                }
+
+                const response = await fetch("http://localhost:3000/api/salas", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nome, userId: user.id }),
+                });
+
+                const data = await response.json();
+                alert(data.message || "Sala criada!");
+
+                // Atualiza a lista de salas criadas por você
+                carregarSalasDoUsuario();
+            } catch (error) {
+                console.error("Erro ao criar sala:", error);
+                alert("Erro ao criar sala.");
+            }
+        }
+
+        async function carregarSalasDoUsuario() {
+            try {
+                const user = JSON.parse(localStorage.getItem("user"));
+                if (!user) return; // usuário não logado
+
+                const response = await fetch(
+                    `http://localhost:3000/api/salas?userId=${user.id}`
+                );
+                const salas = await response.json();
+
+                const tbody = document.getElementById("ranking-sala-body");
+                tbody.innerHTML = "";
+
+                if (salas.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="3">Você ainda não criou nenhuma sala.</td></tr>';
+                    return;
+                }
+
+                salas.forEach((sala, index) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${sala.nome}</td>
+                        <td></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar salas do usuário:", error);
+            }
+        }
+    </script>
+</body>
+</html>

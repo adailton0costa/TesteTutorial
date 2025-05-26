@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastrar Questões</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 10px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 15px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .alt-item {
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      position: relative;
+    }
+    .remove-btn {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background-color: #c0392b;
+    }
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .hamburger {
+      display: none;
+      font-size: 2rem;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      nav ul {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 60px;
+        right: 0;
+        background: #3f4f85;
+        width: 200px;
+        padding: 15px;
+        border-radius: 10px;
+      }
+
+      nav ul.show {
+        display: flex;
+      }
+
+      .hamburger {
+        display: block;
+      }
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 30px;
+    }
+
+    nav ul li {
+      position: relative;
+    }
+
+    nav ul li a {
+      color: rgb(0, 0, 0);
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+
+    nav ul li a:hover {
+      color: #FFD54F;
+      transform: scale(1.1);
+    }
+
+    nav ul li a::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      background-color: #FFD54F;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: width 0.3s ease;
+    }
+
+    nav ul li a:hover::after,
+    nav ul li a.active::after {
+      width: 100%;
+    }
+
+    nav ul li a.active {
+      color: #FFD54F;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <nav>
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="simulados.html">Simulados</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="questoes.html">Questões</a></li>
+                <li><a href="cadquest.html">ADD Quest</a></li>
+                <li><a href="editor.html">EDIT Quest</a></li>
+            </ul>
+  </nav>
+  <h1>Cadastrar Questão</h1>
+
+<form id="formQuestao">
+  <label for="enunciado">Enunciado:</label>
+  <textarea id="enunciado" rows="4" required></textarea>
+
+  <label for="categoria">Categoria:</label>
+  <input type="text" id="categoria" />
+
+  <label for="banca">Banca:</label>
+  <input type="text" id="banca" />
+
+  <label for="ano">Ano:</label>
+  <input type="number" id="ano" />
+
+  <label>Alternativas:</label>
+  <div id="alternativasContainer"></div>
+  <button type="button" id="addAlternativaBtn">Adicionar alternativa</button>
+
+  <!-- ✅ Novo campo para comentário -->
+  <label for="comentario">Comentário da resposta correta:</label>
+  <textarea id="comentario" rows="3" placeholder="Explique por que a alternativa correta está certa..."></textarea>
+
+  <button type="submit">Cadastrar Questão</button>
+</form>
+
+<p class="message" id="message"></p>
+
+<script>
+  const alternativasContainer = document.getElementById('alternativasContainer');
+  const addAlternativaBtn = document.getElementById('addAlternativaBtn');
+  const form = document.getElementById('formQuestao');
+  const messageEl = document.getElementById('message');
+
+  function criarAlternativa(texto = '', correta = false) {
+    const div = document.createElement('div');
+    div.className = 'alt-item';
+
+    const inputTexto = document.createElement('input');
+    inputTexto.type = 'text';
+    inputTexto.placeholder = 'Texto da alternativa';
+    inputTexto.value = texto;
+    inputTexto.required = true;
+    inputTexto.style.width = '70%';
+    inputTexto.style.marginRight = '10px';
+
+    const labelCorreta = document.createElement('label');
+    labelCorreta.style.userSelect = 'none';
+
+    const inputCorreta = document.createElement('input');
+    inputCorreta.type = 'checkbox';
+    inputCorreta.checked = correta;
+    inputCorreta.style.marginRight = '4px';
+
+    labelCorreta.appendChild(inputCorreta);
+    labelCorreta.appendChild(document.createTextNode('Correta'));
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = 'Remover';
+    removeBtn.className = 'remove-btn';
+
+    removeBtn.onclick = () => {
+      alternativasContainer.removeChild(div);
+    };
+
+    div.appendChild(inputTexto);
+    div.appendChild(labelCorreta);
+    div.appendChild(removeBtn);
+
+    alternativasContainer.appendChild(div);
+  }
+
+  criarAlternativa();
+
+  addAlternativaBtn.addEventListener('click', () => {
+    criarAlternativa();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    messageEl.textContent = '';
+
+    const enunciado = document.getElementById('enunciado').value.trim();
+    const categoria = document.getElementById('categoria').value.trim();
+    const banca = document.getElementById('banca').value.trim();
+    const anoRaw = document.getElementById('ano').value.trim();
+    const comentario = document.getElementById('comentario').value.trim(); // ✅ coleta o comentário
+    const ano = anoRaw ? parseInt(anoRaw) : null;
+
+    const divs = alternativasContainer.querySelectorAll('.alt-item');
+    const alternativas = [];
+
+    for (const div of divs) {
+      const texto = div.querySelector('input[type=text]').value.trim();
+      const correta = div.querySelector('input[type=checkbox]').checked;
+      if (!texto) {
+        messageEl.textContent = 'Preencha o texto de todas as alternativas.';
+        return;
+      }
+      alternativas.push({ texto, correta });
+    }
+
+    if (!alternativas.some(a => a.correta)) {
+      messageEl.textContent = 'Marque pelo menos uma alternativa correta.';
+      return;
+    }
+
+    if (!enunciado) {
+      messageEl.textContent = 'Preencha o enunciado.';
+      return;
+    }
+
+    // Envio para o backend incluindo o comentário
+    try {
+      const res = await fetch('http://localhost:3000/api/questoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enunciado,
+          categoria,
+          banca,
+          ano,
+          alternativas,
+          comentario // ✅ envia o comentário
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        messageEl.style.color = 'green';
+        messageEl.textContent = 'Questão cadastrada com sucesso!';
+        form.reset();
+        alternativasContainer.innerHTML = '';
+        criarAlternativa();
+      } else {
+        messageEl.style.color = 'red';
+        messageEl.textContent = data.error || 'Erro ao cadastrar questão.';
+      }
+    } catch (error) {
+      messageEl.style.color = 'red';
+      messageEl.textContent = 'Erro ao conectar com o servidor.';
+    }
+  });
+</script>
+</body>
+</html>

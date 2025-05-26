@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulados - Prepara Enade</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="img/icon.png" />
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="img/icon.png" alt="Ícone de livro" class="logo-icon" />
+      Prepara Enade
+    </div>
+    <nav>
+      <div class="hamburger" onclick="toggleMenu()">☰</div>
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="simulados.html">Simulados</a></li>
+        <li><a href="ranking.html">Ranking</a></li>
+        <li><a href="questoes.html">Questões</a></li>
+      </ul>
+    </nav>
+    <div id="login-area">
+      <button class="btn-login" onclick="window.location.href='login.html'">Login</button>
+    </div>
+  </header>
+  <section class="container">
+  <div class="topo-questoes">
+    <h2>Monte seu Simulado Personalizado</h2>
+  </div>
+
+  <div class="filtro-questoes">
+    <div class="cp-filtro" id="filtro-categoria"></div>
+    <div class="cp-filtro" id="filtro-banca"></div>
+    <div class="cp-filtro" id="filtro-ano"></div>
+    <div class="cp-filtro">
+      <h3>Quantidade</h3>
+      <select id="quantidade">
+        <option value="10">10 questões</option>
+        <option value="15">15 questões</option>
+        <option value="20">20 questões</option>
+        <option value="30">30 questões</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="questoes-lista" id="questoes-lista"></div>
+
+  <button id="btn-gerar-simulado">Gerar Simulado</button>
+</section>
+
+
+  <footer>
+    <p>&copy; 2025 Plataforma Enade - Todos os direitos reservados</p>
+  </footer>
+
+<script>
+  let questoesCarregadas = [];
+
+  const filtroCategoriaDiv = document.getElementById("filtro-categoria");
+  const filtroBancaDiv = document.getElementById("filtro-banca");
+  const filtroAnoDiv = document.getElementById("filtro-ano");
+  const btnGerarSimulado = document.getElementById("btn-gerar-simulado");
+
+  function criarCheckboxes(container, valores, nomeGrupo) {
+    container.innerHTML = "";
+    const titulo = document.createElement("h3");
+    titulo.textContent = nomeGrupo;
+    container.appendChild(titulo);
+
+    Array.from(valores).sort().forEach(v => {
+      const label = document.createElement("label");
+      label.style.display = "block";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.name = nomeGrupo;
+      checkbox.value = v;
+
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(" " + v));
+      container.appendChild(label);
+    });
+  }
+
+  function preencherFiltrosComCheckboxes(questoes) {
+    const categorias = new Set();
+    const bancas = new Set();
+    const anos = new Set();
+
+    questoes.forEach(q => {
+      categorias.add(q.categoria);
+      bancas.add(q.banca);
+      anos.add(q.ano);
+    });
+
+    criarCheckboxes(filtroCategoriaDiv, categorias, "categoria");
+    criarCheckboxes(filtroBancaDiv, bancas, "banca");
+    criarCheckboxes(filtroAnoDiv, anos, "ano");
+  }
+
+  function pegarSelecionados(nomeGrupo) {
+    return Array.from(document.querySelectorAll(`input[name="${nomeGrupo}"]:checked`)).map(cb => cb.value);
+  }
+
+  function embaralharArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  btnGerarSimulado.addEventListener("click", () => {
+  const categoriasSelecionadas = pegarSelecionados("categoria");
+  const bancasSelecionadas = pegarSelecionados("banca");
+  const anosSelecionados = pegarSelecionados("ano");
+  const quantidadeSelecionada = parseInt(document.getElementById("quantidade").value);
+
+  // Filtra as questões conforme os filtros selecionados
+  const questoesFiltradas = questoesCarregadas.filter(q => {
+    const okCategoria = categoriasSelecionadas.length === 0 || categoriasSelecionadas.includes(q.categoria);
+    const okBanca = bancasSelecionadas.length === 0 || bancasSelecionadas.includes(q.banca);
+    const okAno = anosSelecionados.length === 0 || anosSelecionados.includes(String(q.ano));
+    return okCategoria && okBanca && okAno;
+  });
+
+  if (questoesFiltradas.length === 0) {
+    alert("Nenhuma questão encontrada com os filtros aplicados.");
+    return; // sai da função para não tentar gerar o simulado
+  }
+
+  // Define a quantidade final: a menor entre o desejado e o disponível
+  const quantidadeFinal = Math.min(quantidadeSelecionada, questoesFiltradas.length);
+
+  if (quantidadeFinal < quantidadeSelecionada) {
+    alert(`Apenas ${quantidadeFinal} questões disponíveis. Gerando com essa quantidade.`);
+  }
+
+  // Seleciona as questões embaralhadas e com a quantidade final
+  const questoesSelecionadas = embaralharArray(questoesFiltradas).slice(0, quantidadeFinal);
+
+  // Salva e redireciona
+  localStorage.setItem("simuladoPersonalizado", JSON.stringify(questoesSelecionadas));
+  window.location.href = "simu1.html";
+});
+  async function carregarQuestoes() {
+    try {
+      const res = await fetch("http://localhost:3000/api/questoes");
+      const dados = await res.json();
+      questoesCarregadas = dados;
+      preencherFiltrosComCheckboxes(dados);
+    } catch (err) {
+      console.error("Erro ao carregar questões:", err);
+    }
+  }
+
+  carregarQuestoes();
+
+  const user = JSON.parse(localStorage.getItem('user'));
+  const loginArea = document.getElementById('login-area');
+
+if (user && loginArea) {
+    const displayName = user.nickname ? user.nickname : user.name;
+    const profilePhoto = user.foto ? user.foto : 'img/Animais/do-utilizador.png';
+
+    loginArea.innerHTML = `
+        <div class="user-info" onclick="window.location.href='perfil.html'" style="cursor: pointer;">
+            <img src="${profilePhoto}" alt="Foto de Perfil" class="profile-photo">
+            <span class="user-name">${displayName}</span>
+            <button onclick="logout(event)" class="btn-login">Sair</button>
+        </div>
+        
+    `;
+}
+function logout(event) {
+        event.stopPropagation();
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+
+</script>
+</body>
+</html>
